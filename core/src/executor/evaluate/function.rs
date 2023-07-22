@@ -794,3 +794,28 @@ pub fn length<'a>(name: String, expr: Evaluated<'_>) -> Result<Evaluated<'a>> {
         _ => Err(EvaluateError::FunctionRequiresStrOrListOrMapValue(name).into()),
     }
 }
+
+pub fn coalesce<'a>(exprs: Vec<Evaluated<'_>>) -> Result<Evaluated<'a>> {
+    if exprs.is_empty() {
+        return Err((EvaluateError::FunctionRequiresMoreArguments {
+            function_name: "COALESCE".to_owned(),
+            required_minimum: 1,
+            found: exprs.len(),
+        })
+        .into());
+    }
+
+    let control_flow = exprs.into_iter().map(|expr| expr.try_into()).try_for_each(
+        |item: Result<Value>| match item {
+            Ok(value) if value.is_null() => ControlFlow::Continue(()),
+            Ok(value) => ControlFlow::Break(Ok(value)),
+            Err(err) => ControlFlow::Break(Err(err)),
+        },
+    );
+
+    match control_flow {
+        ControlFlow::Break(Ok(value)) => Ok(Evaluated::from(value)),
+        ControlFlow::Break(Err(err)) => Err(err),
+        ControlFlow::Continue(()) => Ok(Evaluated::from(Value::Null)),
+    }
+}

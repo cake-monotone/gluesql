@@ -80,6 +80,7 @@ pub enum FunctionNode<'a> {
     },
     Degrees(ExprNode<'a>),
     Radians(ExprNode<'a>),
+    Coalesce(ExprList<'a>),
     Concat(ExprList<'a>),
     ConcatWs {
         separator: ExprNode<'a>,
@@ -245,6 +246,7 @@ impl<'a> TryFrom<FunctionNode<'a>> for Function {
                 let size = size.try_into()?;
                 Ok(Function::Rpad { expr, size, fill })
             }
+            FunctionNode::Coalesce(expr_list) => expr_list.try_into().map(Function::Coalesce),
             FunctionNode::Concat(expr_list) => expr_list.try_into().map(Function::Concat),
             FunctionNode::ConcatWs { separator, exprs } => {
                 let separator = separator.try_into()?;
@@ -540,6 +542,9 @@ pub fn rand(expr: Option<ExprNode>) -> ExprNode {
 }
 pub fn round<'a, T: Into<ExprNode<'a>>>(expr: T) -> ExprNode<'a> {
     ExprNode::Function(Box::new(FunctionNode::Round(expr.into())))
+}
+pub fn coalesce<'a, T: Into<ExprList<'a>>>(expr: T) -> ExprNode<'a> {
+    ExprNode::Function(Box::new(FunctionNode::Coalesce(expr.into())))
 }
 pub fn concat<'a, T: Into<ExprList<'a>>>(expr: T) -> ExprNode<'a> {
     ExprNode::Function(Box::new(FunctionNode::Concat(expr.into())))
@@ -871,12 +876,12 @@ mod tests {
     use crate::{
         ast::DateTimeField,
         ast_builder::{
-            abs, acos, ascii, asin, atan, calc_distance, cast, ceil, chr, col, concat, concat_ws,
-            cos, date, degrees, divide, exp, expr, extract, find_idx, floor, format, gcd,
-            generate_uuid, get_x, get_y, ifnull, initcap, lcm, left, length, ln, log, log10, log2,
-            lower, lpad, ltrim, md5, modulo, now, num, pi, point, position, power, radians, rand,
-            repeat, replace, reverse, right, round, rpad, rtrim, sign, sin, sqrt, substr, tan,
-            test_expr, text, time, timestamp, to_date, to_time, to_timestamp, upper,
+            abs, acos, ascii, asin, atan, calc_distance, cast, ceil, chr, coalesce, col, concat,
+            concat_ws, cos, date, degrees, divide, exp, expr, extract, find_idx, floor, format,
+            gcd, generate_uuid, get_x, get_y, ifnull, initcap, lcm, left, length, ln, log, log10,
+            log2, lower, lpad, ltrim, md5, modulo, now, null, num, pi, point, position, power,
+            radians, rand, repeat, replace, reverse, right, round, rpad, rtrim, sign, sin, sqrt,
+            substr, tan, test_expr, text, time, timestamp, to_date, to_time, to_timestamp, upper,
         },
         prelude::DataType,
     };
@@ -1198,6 +1203,13 @@ mod tests {
 
         let actual = num(1).radians();
         let expected = "RADIANS(1)";
+        test_expr(actual, expected);
+    }
+
+    #[test]
+    fn function_coalesce() {
+        let actual = coalesce(vec![null(), text("Glue")]);
+        let expected = "COALESCE(NULL, 'Glue')";
         test_expr(actual, expected);
     }
 
