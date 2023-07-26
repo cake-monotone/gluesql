@@ -85,11 +85,11 @@ test_case!(coalesce, async move {
 
     test!(
         // Test COALESCE with float arguments
-        "SELECT COALESCE(NULL, 3.14, 6.28) AS coalesce",
+        "SELECT COALESCE(NULL, 1.23, 4.56) AS coalesce",
         Ok(select!(
             coalesce
             F64;
-            3.14
+            1.23
         ))
     );
 
@@ -118,9 +118,9 @@ test_case!(coalesce, async move {
         INSERT INTO TestCoalesce (id, text_value, integer_value, float_value, boolean_value) VALUES 
             (1, 'Hitchhiker', NULL, NULL, NULL),
             (2, NULL, 42, NULL, NULL),
-            (3, NULL, NULL, 3.14, NULL),
+            (3, NULL, NULL, 1.11, NULL),
             (4, NULL, NULL, NULL, TRUE),
-            (5, 'Universe', 84, 6.28, FALSE);
+            (5, 'Universe', 84, 2.22, FALSE);
         "
     );
 
@@ -139,9 +139,9 @@ test_case!(coalesce, async move {
             I64 | Str                          | I64              | F64            | Bool;
             1     "Hitchhiker".to_owned()        0                  0.1              false;
             2     "Default".to_owned()           42                 0.1              false;
-            3     "Default".to_owned()           0                  3.14             false;
+            3     "Default".to_owned()           0                  1.11             false;
             4     "Default".to_owned()           0                  0.1              true;
-            5     "Universe".to_owned()          84                 6.28             false
+            5     "Universe".to_owned()          84                 2.22             false
         ))
     );
 
@@ -152,7 +152,7 @@ test_case!(coalesce, async move {
             id     | coalesce;
             I64(1)   Str("Hitchhiker".to_owned());
             I64(2)   I64(42);
-            I64(3)   F64(3.14);
+            I64(3)   F64(1.11);
             I64(4)   Bool(true);
             I64(5)   Str("Universe".to_owned())
         ))
